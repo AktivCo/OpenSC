@@ -80,46 +80,94 @@ static int create_sysdf(sc_profile_t *profile, sc_card_t *card, const char *name
 	return r;
 }
 
+
+static int rtecp_create_file(sc_card_t *card, sc_file_t *file)
+{
+	sc_path_t path;
+	int r;
+
+	assert(card && card->ctx && file);
+	path = file->path;
+	assert(path.len > 2);
+	if (path.len > 2)
+		path.len -= 2;
+	r = sc_select_file(card, &path, NULL);
+	if (r == SC_SUCCESS)
+		r = sc_create_file(card, file);
+	sc_file_free(file);
+
+	return r;
+}
+
+
+static int create_file(sc_profile_t *profile, sc_card_t *card, const char *name)
+{
+	sc_file_t *file;
+	int r;
+
+	assert(profile && name);
+	r = sc_profile_get_file(profile, name, &file);
+	if (r == SC_SUCCESS)
+	{
+		r = rtecp_create_file(card, file);
+		sc_file_free(file);
+	}
+	sc_log(card->ctx, 
+		"Create %s failed: %s\n", name, sc_strerror(r));
+	return r;
+}
+
+
+
 /*
  * Card-specific initialization of PKCS15 meta-information
  */
 static int rtecp_init(sc_profile_t *profile, sc_pkcs15_card_t *p15card)
 {
 	sc_card_t *card;
-	sc_file_t *file;
-	int r;
+	// sc_file_t *file;
+	// int r;
 
 	if (!profile || !p15card || !p15card->card || !p15card->card->ctx)
 		return SC_ERROR_INVALID_ARGUMENTS;
 
 	card = p15card->card;
 
-	r = sc_profile_get_file(profile, "MF", &file);
-	LOG_TEST_RET(card->ctx, r, "Get MF info failed");
-	assert(file);
-	r = sc_create_file(card, file);
-	sc_file_free(file);
-	LOG_TEST_RET(card->ctx, r, "Create MF failed");
+	// r = sc_profile_get_file(profile, "MF", &file);
+	// LOG_TEST_RET(card->ctx, r, "Get MF info failed");
+	// assert(file);
+	// r = sc_create_file(card, file);
+	// sc_file_free(file);
+	// LOG_TEST_RET(card->ctx, r, "Create MF failed");
 
-	r = sc_profile_get_file(profile, "DIR", &file);
-	LOG_TEST_RET(card->ctx, r, "Get DIR file info failed");
-	assert(file);
-	r = sc_create_file(card, file);
-	sc_file_free(file);
-	LOG_TEST_RET(card->ctx, r, "Create DIR file failed");
+	create_file(profile, card, "DIR");
 
-	create_sysdf(profile, card, "Sys-DF");
-	create_sysdf(profile, card, "SysKey-DF");
-	create_sysdf(profile, card, "PuKey-DF");
-	create_sysdf(profile, card, "PrKey-DF");
-	create_sysdf(profile, card, "SKey-DF");
-	create_sysdf(profile, card, "Cer-DF");
-	create_sysdf(profile, card, "LCHV-DF");
+	// r = sc_profile_get_file(profile, "DIR", &file);
+	// LOG_TEST_RET(card->ctx, r, "Get DIR file info failed");
+	// assert(file);
+	// r = sc_create_file(card, file);
+	// sc_file_free(file);
+	// LOG_TEST_RET(card->ctx, r, "Create DIR file failed");
 
-	create_sysdf(profile, card, "Resrv1-DF");
-	create_sysdf(profile, card, "Resrv2-DF");
-	create_sysdf(profile, card, "Resrv3-DF");
-	create_sysdf(profile, card, "Resrv4-DF");
+
+
+	int dummy = 0;
+	if (dummy) {
+		create_sysdf(profile, card, "Sys-DF");
+	}
+
+	// create_sysdf(profile, card, "Sys-DF");
+	// create_sysdf(profile, card, "SysKey-DF");
+	// create_sysdf(profile, card, "PuKey-DF");
+	// create_sysdf(profile, card, "PrKey-DF");
+	// create_sysdf(profile, card, "SKey-DF");
+	// create_sysdf(profile, card, "Cer-DF");
+	// create_sysdf(profile, card, "LCHV-DF");
+
+	// create_sysdf(profile, card, "Resrv1-DF");
+	// create_sysdf(profile, card, "Resrv2-DF");
+	// create_sysdf(profile, card, "Resrv3-DF");
+	// create_sysdf(profile, card, "Resrv4-DF");
 
 	return sc_select_file(card, sc_get_mf_path(), NULL);
 }
@@ -131,7 +179,7 @@ static int rtecp_create_dir(sc_profile_t *profile, sc_pkcs15_card_t *p15card, sc
 {
 	if (!profile || !p15card || !p15card->card || !df)
 		return SC_ERROR_INVALID_ARGUMENTS;
-	return sc_create_file(p15card->card, df);
+	return rtecp_create_file(p15card->card, df);
 }
 
 /*

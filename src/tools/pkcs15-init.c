@@ -846,8 +846,8 @@ do_init_app(struct sc_profile *profile)
 	struct sc_pkcs15init_initargs args;
 	sc_pkcs15_auth_info_t	info;
 	sc_ui_hints_t		hints;
-	const char		*role = "so";
-	int			r, so_puk_disabled = 0;
+	// const char		*role = "so";
+	int			r;//, so_puk_disabled = 0;
 
 	memset(&hints, 0, sizeof(hints));
 	memset(&info, 0, sizeof(info));
@@ -860,57 +860,57 @@ do_init_app(struct sc_profile *profile)
 	hints.info.pin	= &info;
 
 	/* If it's the onepin option, we need the user PIN iso the SO PIN */
-	if (opt_profile && strstr(opt_profile, "+onepin")) {
-		if (opt_pins[0])
-			opt_pins[2] = opt_pins[0];
-		if (opt_pins[1])
-			opt_pins[3] = opt_pins[1];
-	}
+	// if (opt_profile && strstr(opt_profile, "+onepin")) {
+	// 	if (opt_pins[0])
+	// 		opt_pins[2] = opt_pins[0];
+	// 	if (opt_pins[1])
+	// 		opt_pins[3] = opt_pins[1];
+	// }
 
-	memset(&args, 0, sizeof(args));
+	// memset(&args, 0, sizeof(args));
 
-	sc_pkcs15init_get_pin_info(profile, SC_PKCS15INIT_SO_PIN, &info);
+	// sc_pkcs15init_get_pin_info(profile, SC_PKCS15INIT_SO_PIN, &info);
 
-	if (!(info.attrs.pin.flags & SC_PKCS15_PIN_FLAG_SO_PIN))
-		role = "user";
-	else
-		hints.flags |= SC_UI_PIN_OPTIONAL; /* SO PIN is always optional */
-
-
-	if ((info.attrs.pin.flags & SC_PKCS15_PIN_FLAG_UNBLOCK_DISABLED)
-			&& (info.attrs.pin.flags & SC_PKCS15_PIN_FLAG_SO_PIN))
-		so_puk_disabled = 1;
+	// if (!(info.attrs.pin.flags & SC_PKCS15_PIN_FLAG_SO_PIN))
+	// 	role = "user";
+	// else
+	// 	hints.flags |= SC_UI_PIN_OPTIONAL; /* SO PIN is always optional */
 
 
-	if (!opt_pins[2] && !opt_use_pinpad && !opt_no_sopin) {
-		r = get_new_pin(&hints, role, "pin", &pins[2]);
-		if (r < 0)
-			goto failed;
-		opt_pins[2] = pins[2];
-	}
+	// if ((info.attrs.pin.flags & SC_PKCS15_PIN_FLAG_UNBLOCK_DISABLED)
+	// 		&& (info.attrs.pin.flags & SC_PKCS15_PIN_FLAG_SO_PIN))
+	// 	so_puk_disabled = 1;
 
-	if (!so_puk_disabled && opt_pins[2] && !opt_pins[3] && !opt_use_pinpad) {
-		sc_pkcs15init_get_pin_info(profile, SC_PKCS15INIT_SO_PUK, &info);
 
-		if (!(info.attrs.pin.flags & SC_PKCS15_PIN_FLAG_SO_PIN))
-			role = "user";
+	// if (!opt_pins[2] && !opt_use_pinpad && !opt_no_sopin) {
+	// 	r = get_new_pin(&hints, role, "pin", &pins[2]);
+	// 	if (r < 0)
+	// 		goto failed;
+	// 	opt_pins[2] = pins[2];
+	// }
 
-		hints.flags |= SC_UI_PIN_OPTIONAL;
-		r = get_new_pin(&hints, role, "puk", &pins[3]);
-		if (r < 0)
-			goto failed;
-		opt_pins[3] = pins[3];
-	}
+	// if (!so_puk_disabled && opt_pins[2] && !opt_pins[3] && !opt_use_pinpad) {
+	// 	sc_pkcs15init_get_pin_info(profile, SC_PKCS15INIT_SO_PUK, &info);
 
-	args.so_pin = (const u8 *) opt_pins[2];
-	if (args.so_pin)
-		args.so_pin_len = strlen((const char *) args.so_pin);
+	// 	if (!(info.attrs.pin.flags & SC_PKCS15_PIN_FLAG_SO_PIN))
+	// 		role = "user";
 
-	if (!so_puk_disabled)   {
-		args.so_puk = (const u8 *) opt_pins[3];
-		if (args.so_puk)
-			args.so_puk_len = strlen((const char *) args.so_puk);
-	}
+	// 	hints.flags |= SC_UI_PIN_OPTIONAL;
+	// 	r = get_new_pin(&hints, role, "puk", &pins[3]);
+	// 	if (r < 0)
+	// 		goto failed;
+	// 	opt_pins[3] = pins[3];
+	// }
+
+	// args.so_pin = (const u8 *) opt_pins[2];
+	// if (args.so_pin)
+	// 	args.so_pin_len = strlen((const char *) args.so_pin);
+
+	// if (!so_puk_disabled)   {
+	// 	args.so_puk = (const u8 *) opt_pins[3];
+	// 	if (args.so_puk)
+	// 		args.so_puk_len = strlen((const char *) args.so_puk);
+	// }
 
 	args.serial = (const char *) opt_serial;
 	args.label = opt_label;
@@ -922,7 +922,8 @@ do_init_app(struct sc_profile *profile)
 	sc_unlock(g_card);
 	return r;
 
-failed:	fprintf(stderr, "Failed to read PIN: %s\n", sc_strerror(r));
+// failed:	
+	fprintf(stderr, "Failed to read PIN: %s\n", sc_strerror(r));
 	return SC_ERROR_PKCS15INIT;
 }
 

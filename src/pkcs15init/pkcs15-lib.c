@@ -370,11 +370,11 @@ sc_pkcs15init_bind(struct sc_card *card, const char *name, const char *profile_o
 		strlcpy(card_profile, profile_option, sizeof(card_profile));
 
 	do   {
-		r = sc_profile_load(profile, profile->name);
-		if (r < 0)   {
-			sc_log(ctx, "Failed to load profile '%s': %s", profile->name, sc_strerror(r));
-			break;
-		}
+		// r = sc_profile_load(profile, profile->name);
+		// if (r < 0)   {
+		// 	sc_log(ctx, "Failed to load profile '%s': %s", profile->name, sc_strerror(r));
+		// 	break;
+		// }
 
 		r = sc_profile_load(profile, card_profile);
 		if (r < 0)   {
@@ -765,16 +765,22 @@ sc_pkcs15init_add_app(struct sc_card *card, struct sc_profile *profile,
 {
 	struct sc_context *ctx = card->ctx;
 	struct sc_pkcs15_card	*p15card = profile->p15_spec;
-	struct sc_pkcs15_auth_info pin_ainfo, puk_ainfo;
-	struct sc_pkcs15_pin_attributes *pin_attrs = &pin_ainfo.attrs.pin;
-	struct sc_pkcs15_object	*pin_obj = NULL;
+	struct sc_pkcs15_auth_info pin_ainfo;//, puk_ainfo;
+	// struct sc_pkcs15_pin_attributes *pin_attrs = &pin_ainfo.attrs.pin;
+	// struct sc_pkcs15_object	*pin_obj = NULL;
 	struct sc_app_info	*app;
 	struct sc_file		*df = profile->df_info->file;
 	int			r = SC_SUCCESS;
-	int			has_so_pin = args->so_pin_len != 0;
+	// int			has_so_pin = 0;//args->so_pin_len != 0;
 
 	LOG_FUNC_CALLED(ctx);
 	p15card->card = card;
+
+	int dummy = 0;
+	if (dummy) {
+		sc_pkcs15init_update_dir(p15card, profile, app);
+		sc_pkcs15init_qualify_pin(card, "SO PIN", args->so_pin_len, &pin_ainfo);
+	}
 
 	/* FIXME:
 	 * Some cards need pincache
@@ -786,69 +792,69 @@ sc_pkcs15init_add_app(struct sc_card *card, struct sc_profile *profile,
 		LOG_TEST_RET(ctx, SC_ERROR_TOO_MANY_OBJECTS, "Too many applications on this card.");
 
 	/* In case of pinpad readers check if SO PIN is defined in a profile */
-	if (!has_so_pin && (card->reader->capabilities & SC_READER_CAP_PIN_PAD)) {
-		sc_profile_get_pin_info(profile, SC_PKCS15INIT_SO_PIN, &pin_ainfo);
-		/* If found, assume we want SO PIN */
-		has_so_pin = pin_ainfo.attrs.pin.reference != -1;
-	}
+	// if (!has_so_pin && (card->reader->capabilities & SC_READER_CAP_PIN_PAD)) {
+	// 	sc_profile_get_pin_info(profile, SC_PKCS15INIT_SO_PIN, &pin_ainfo);
+	// 	/* If found, assume we want SO PIN */
+	// 	has_so_pin = pin_ainfo.attrs.pin.reference != -1;
+	// }
 
 	/* If the profile requires an SO PIN, check min/max length */
-	if (has_so_pin) {
-		const char	*pin_label;
+	// if (has_so_pin) {
+	// 	const char	*pin_label;
 
-		if (args->so_pin_len) {
-			sc_profile_get_pin_info(profile, SC_PKCS15INIT_SO_PIN, &pin_ainfo);
-			r = sc_pkcs15init_qualify_pin(card, "SO PIN", args->so_pin_len, &pin_ainfo);
-			LOG_TEST_RET(ctx, r, "Failed to qualify SO PIN");
-		}
+	// 	if (args->so_pin_len) {
+	// 		sc_profile_get_pin_info(profile, SC_PKCS15INIT_SO_PIN, &pin_ainfo);
+	// 		r = sc_pkcs15init_qualify_pin(card, "SO PIN", args->so_pin_len, &pin_ainfo);
+	// 		LOG_TEST_RET(ctx, r, "Failed to qualify SO PIN");
+	// 	}
 
-		/* Path encoded only for local SO PIN */
-		if (pin_attrs->flags & SC_PKCS15_PIN_FLAG_LOCAL)
-			pin_ainfo.path = df->path;
+	// 	/* Path encoded only for local SO PIN */
+	// 	if (pin_attrs->flags & SC_PKCS15_PIN_FLAG_LOCAL)
+	// 		pin_ainfo.path = df->path;
 
-		/* Select the PIN reference */
-		if (profile->ops->select_pin_reference) {
-			r = profile->ops->select_pin_reference(profile, p15card, &pin_ainfo);
-			LOG_TEST_RET(ctx, r, "Failed to select card specific PIN reference");
-		}
+	// 	/* Select the PIN reference */
+	// 	if (profile->ops->select_pin_reference) {
+	// 		r = profile->ops->select_pin_reference(profile, p15card, &pin_ainfo);
+	// 		LOG_TEST_RET(ctx, r, "Failed to select card specific PIN reference");
+	// 	}
 
-		sc_profile_get_pin_info(profile, SC_PKCS15INIT_SO_PUK, &puk_ainfo);
-		r = sc_pkcs15init_qualify_pin(card, "SO PUK", args->so_puk_len, &puk_ainfo);
-		LOG_TEST_RET(ctx, r, "Failed to qualify SO PUK");
+	// 	sc_profile_get_pin_info(profile, SC_PKCS15INIT_SO_PUK, &puk_ainfo);
+	// 	r = sc_pkcs15init_qualify_pin(card, "SO PUK", args->so_puk_len, &puk_ainfo);
+	// 	LOG_TEST_RET(ctx, r, "Failed to qualify SO PUK");
 
-		if (!(pin_label = args->so_pin_label)) {
-			if (pin_attrs->flags & SC_PKCS15_PIN_FLAG_SO_PIN)
-				pin_label = "Security Officer PIN";
-			else
-				pin_label = "User PIN";
-		}
+	// 	if (!(pin_label = args->so_pin_label)) {
+	// 		if (pin_attrs->flags & SC_PKCS15_PIN_FLAG_SO_PIN)
+	// 			pin_label = "Security Officer PIN";
+	// 		else
+	// 			pin_label = "User PIN";
+	// 	}
 
-		if (args->so_puk_len == 0)
-			pin_attrs->flags |= SC_PKCS15_PIN_FLAG_UNBLOCK_DISABLED;
+	// 	if (args->so_puk_len == 0)
+	// 		pin_attrs->flags |= SC_PKCS15_PIN_FLAG_UNBLOCK_DISABLED;
 
-		pin_obj = sc_pkcs15init_new_object(SC_PKCS15_TYPE_AUTH_PIN, pin_label, NULL, &pin_ainfo);
-		if (pin_obj)   {
-			/* When composing ACLs to create 'DIR' DF,
-			 *	the references of the not-yet-existing PINs can be requested.
-			 * For this, create a 'virtual' AUTH object 'SO PIN', accessible by the card specific part,
-			 * but not yet written into the on-card PKCS#15.
-			 */
-			sc_log(ctx, "Add virtual SO_PIN('%.*s',flags:%X,reference:%i,path:'%s')", (int) sizeof pin_obj->label, pin_obj->label,
-					pin_attrs->flags, pin_attrs->reference, sc_print_path(&pin_ainfo.path));
+	// 	pin_obj = sc_pkcs15init_new_object(SC_PKCS15_TYPE_AUTH_PIN, pin_label, NULL, &pin_ainfo);
+	// 	if (pin_obj)   {
+	// 		/* When composing ACLs to create 'DIR' DF,
+	// 		 *	the references of the not-yet-existing PINs can be requested.
+	// 		 * For this, create a 'virtual' AUTH object 'SO PIN', accessible by the card specific part,
+	// 		 * but not yet written into the on-card PKCS#15.
+	// 		 */
+	// 		sc_log(ctx, "Add virtual SO_PIN('%.*s',flags:%X,reference:%i,path:'%s')", (int) sizeof pin_obj->label, pin_obj->label,
+	// 				pin_attrs->flags, pin_attrs->reference, sc_print_path(&pin_ainfo.path));
 
-			r = sc_pkcs15_add_object(p15card, pin_obj);
-			LOG_TEST_RET(ctx, r, "Failed to add 'SOPIN' AUTH object");
-		}
-	}
+	// 		r = sc_pkcs15_add_object(p15card, pin_obj);
+	// 		LOG_TEST_RET(ctx, r, "Failed to add 'SOPIN' AUTH object");
+	// 	}
+	// }
 
 	/* Perform card-specific initialization */
 
 	if (profile->ops->init_card)   {
 		r = profile->ops->init_card(profile, p15card);
-		if (r < 0 && pin_obj)   {
-			sc_pkcs15_remove_object(p15card, pin_obj);
-			sc_pkcs15_free_object(pin_obj);
-		}
+		// if (r < 0 && pin_obj)   {
+		// 	sc_pkcs15_remove_object(p15card, pin_obj);
+		// 	sc_pkcs15_free_object(pin_obj);
+		// }
 		LOG_TEST_RET(ctx, r, "Card specific init failed");
 	}
 
@@ -858,17 +864,17 @@ sc_pkcs15init_add_app(struct sc_card *card, struct sc_profile *profile,
 	LOG_TEST_RET(ctx, r, "Create 'DIR' error");
 
 	/* Store SO PIN */
-	if (pin_obj && profile->ops->create_pin)
-		r = profile->ops->create_pin(profile, p15card, df, pin_obj,
-				args->so_pin, args->so_pin_len,
-				args->so_puk, args->so_puk_len);
+	// if (pin_obj && profile->ops->create_pin)
+	// 	r = profile->ops->create_pin(profile, p15card, df, pin_obj,
+	// 			args->so_pin, args->so_pin_len,
+	// 			args->so_puk, args->so_puk_len);
 
-	if (pin_obj)
-		/* Remove 'virtual' AUTH object . */
-		sc_pkcs15_remove_object(p15card, pin_obj);
+	// if (pin_obj)
+	// 	/* Remove 'virtual' AUTH object . */
+	// 	sc_pkcs15_remove_object(p15card, pin_obj);
 
-	if (r < 0)
-		sc_pkcs15_free_object(pin_obj);
+	// if (r < 0)
+	// 	sc_pkcs15_free_object(pin_obj);
 	LOG_TEST_RET(ctx, r, "Card specific create application DF failed");
 
 	/* Store the PKCS15 information on the card
@@ -911,23 +917,23 @@ sc_pkcs15init_add_app(struct sc_card *card, struct sc_profile *profile,
 	app->label = strdup(p15card->tokeninfo->label);
 
 	/* See if we've set an SO PIN */
-	r = sc_pkcs15init_add_object(p15card, profile, SC_PKCS15_AODF, pin_obj);
-	if (r >= 0) {
-		r = sc_pkcs15init_update_dir(p15card, profile, app);
-		if (r >= 0) {
-			r = sc_pkcs15init_update_tokeninfo(p15card, profile);
-		} else {
-			/* FIXME: what to do if sc_pkcs15init_update_dir failed? */
-			free(app->label);
-			free(app); /* unused */
-		}
-	}
-	else {
+	// r = sc_pkcs15init_add_object(p15card, profile, SC_PKCS15_AODF, pin_obj);
+	// if (r >= 0) {
+	// 	r = sc_pkcs15init_update_dir(p15card, profile, app);
+	// 	if (r >= 0) {
+	// 		r = sc_pkcs15init_update_tokeninfo(p15card, profile);
+	// 	} else {
+	// 		/* FIXME: what to do if sc_pkcs15init_update_dir failed? */
+	// 		free(app->label);
+	// 		free(app); /* unused */
+	// 	}
+	// }
+	// else {
 		free(app->label);
 		free(app); /* unused */
-	}
+	// }
 
-	sc_pkcs15init_write_info(p15card, profile, pin_obj);
+	sc_pkcs15init_write_info(p15card, profile, NULL);//pin_obj);
 	LOG_FUNC_RETURN(ctx, r);
 }
 
@@ -3954,6 +3960,7 @@ sc_pkcs15init_create_file(struct sc_profile *profile, struct sc_pkcs15_card *p15
 	r = do_select_parent(profile, p15card, file, &parent);
 	LOG_TEST_RET(ctx, r, "Cannot create file: select parent error");
 
+	//this auth spoils everything 
 	r = sc_pkcs15init_authenticate(profile, p15card, parent, SC_AC_OP_CREATE);
 	LOG_TEST_RET(ctx, r, "Cannot create file: 'CREATE' authentication failed");
 

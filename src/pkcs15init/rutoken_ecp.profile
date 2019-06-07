@@ -110,6 +110,108 @@ filesystem {
 
             DF Resrv1-DF {
                 file-id = 1001;
+
+                DF PubObj-DF {
+                    file-id = 8001;
+
+                    EF DIR {
+                        type    = EF;
+                        file-id = 2F00;
+                        size    = 128;
+                        acl     = *=NEVER, READ=NONE, UPDATE=CHV1, WRITE=CHV1, DELETE=CHV1;
+                    }
+
+                    # Here comes the application DF
+                    DF PKCS15-AppDF {
+                        type    = DF;
+                        file-id = 5000;
+                        acl     = *=NONE, DELETE=CHV2;
+            #           acl     = *=NEVER, SELECT=NONE, DELETE=CHV2, CREATE=CHV2, READ=NONE;
+
+                        EF PKCS15-ODF {
+                            file-id = 5031;
+                            size    = $odf-size;
+                            acl     = *=NONE, DELETE=$SOPIN;
+                        }
+
+                        EF PKCS15-TokenInfo {
+                            file-id = 5032;
+                            size    = $ti-size;
+                            acl     = *=NONE, DELETE=CHV2;
+                        }
+
+                        EF PKCS15-AODF {
+                            file-id = 6005;
+                            size    = $aodf-size;
+                            acl     = *=NEVER, READ=NONE, UPDATE=$SOPIN, WRITE=$SOPIN, DELETE=$SOPIN;
+                        }
+
+                        EF PKCS15-PrKDF {
+                            file-id = 6002;
+                            size    = $prkdf-size;
+                            acl     = *=NEVER, READ=NONE, UPDATE=$PIN, WRITE=$PIN, DELETE=$PIN;
+                        }
+
+                        EF PKCS15-PuKDF {
+                            file-id = 6001;
+                            size    = $pukdf-size;
+                            acl     = *=NEVER, READ=NONE, UPDATE=$PIN, WRITE=$PIN, DELETE=$PIN;
+                        }
+
+                        EF PKCS15-CDF {
+                            file-id = 6004;
+                            size    = $cdf-size;
+                            acl     = *=NEVER, READ=NONE, UPDATE=$PIN, WRITE=$PIN, DELETE=$PIN;
+                        }
+
+                        EF PKCS15-DODF {
+                            file-id = 6006;
+                            size    = $dodf-size;
+                            acl     = *=NEVER, READ=NONE, UPDATE=$PIN, WRITE=$PIN, DELETE=$PIN;
+                        }
+
+                        # This template defines files for keys, certificates etc.
+                        #
+                        # When instantiating the template, each file id will be
+                        # combined with the last octet of the object's pkcs15 id
+                        # to form a unique file ID.
+                        template key-domain {
+                            EF private-key {
+                                file-id     = 0100;
+                                structure   = transparent;
+                                acl         = *=NEVER, READ=$PIN, UPDATE=$PIN, WRITE=$PIN, DELETE=$PIN;
+                            }
+
+                            EF public-key {
+                                file-id     = 0200;
+                                structure   = transparent;
+                                acl         = *=NEVER, READ=NONE, UPDATE=$PIN, WRITE=$PIN, DELETE=$PIN;
+                            }
+
+                            # Certificate template
+                            EF certificate {
+                                file-id     = 0300;
+                                structure   = transparent;
+                                acl         = *=NEVER, READ=NONE, UPDATE=$PIN, WRITE=$PIN, DELETE=$PIN;
+                            }
+
+                            # data objects are stored in transparent EFs.
+                            EF data {
+                                file-id     = 0400;
+                                structure   = transparent;
+                                acl         = *=NEVER, READ=NONE, UPDATE=$PIN, WRITE=$PIN, DELETE=$PIN;
+                            }
+
+                            # private data objects are stored in transparent EFs.
+                            EF privdata {
+                                file-id     = 0500;
+                                structure   = transparent;
+                                acl         = *=NEVER, READ=$PIN, UPDATE=$PIN, WRITE=$PIN, DELETE=$PIN;
+                            }
+                        }
+                    }
+                
+                }
             }
             DF Resrv2-DF {
                 file-id = 1002;
@@ -122,102 +224,6 @@ filesystem {
             }
         }
 
-        EF DIR {
-            type    = EF;
-            file-id = 2F00;
-            size    = 128;
-            acl     = *=NEVER, READ=NONE, UPDATE=CHV1, WRITE=CHV1, DELETE=CHV1;
-        }
-
-        # Here comes the application DF
-        DF PKCS15-AppDF {
-            type    = DF;
-            file-id = 5000;
-            acl     = *=NONE, DELETE=CHV2;
-#           acl     = *=NEVER, SELECT=NONE, DELETE=CHV2, CREATE=CHV2, READ=NONE;
-
-            EF PKCS15-ODF {
-                file-id = 5031;
-                size    = $odf-size;
-                acl     = *=NONE, DELETE=$SOPIN;
-            }
-
-            EF PKCS15-TokenInfo {
-                file-id = 5032;
-                size    = $ti-size;
-                acl     = *=NONE, DELETE=CHV2;
-            }
-
-            EF PKCS15-AODF {
-                file-id = 6005;
-                size    = $aodf-size;
-                acl     = *=NEVER, READ=NONE, UPDATE=$SOPIN, WRITE=$SOPIN, DELETE=$SOPIN;
-            }
-
-            EF PKCS15-PrKDF {
-                file-id = 6002;
-                size    = $prkdf-size;
-                acl     = *=NEVER, READ=NONE, UPDATE=$PIN, WRITE=$PIN, DELETE=$PIN;
-            }
-
-            EF PKCS15-PuKDF {
-                file-id = 6001;
-                size    = $pukdf-size;
-                acl     = *=NEVER, READ=NONE, UPDATE=$PIN, WRITE=$PIN, DELETE=$PIN;
-            }
-
-            EF PKCS15-CDF {
-                file-id = 6004;
-                size    = $cdf-size;
-                acl     = *=NEVER, READ=NONE, UPDATE=$PIN, WRITE=$PIN, DELETE=$PIN;
-            }
-
-            EF PKCS15-DODF {
-                file-id = 6006;
-                size    = $dodf-size;
-                acl     = *=NEVER, READ=NONE, UPDATE=$PIN, WRITE=$PIN, DELETE=$PIN;
-            }
-
-            # This template defines files for keys, certificates etc.
-            #
-            # When instantiating the template, each file id will be
-            # combined with the last octet of the object's pkcs15 id
-            # to form a unique file ID.
-            template key-domain {
-                EF private-key {
-                    file-id     = 0100;
-                    structure   = transparent;
-                    acl         = *=NEVER, READ=$PIN, UPDATE=$PIN, WRITE=$PIN, DELETE=$PIN;
-                }
-
-                EF public-key {
-                    file-id     = 0200;
-                    structure   = transparent;
-                    acl         = *=NEVER, READ=NONE, UPDATE=$PIN, WRITE=$PIN, DELETE=$PIN;
-                }
-
-                # Certificate template
-                EF certificate {
-                    file-id     = 0300;
-                    structure   = transparent;
-                    acl         = *=NEVER, READ=NONE, UPDATE=$PIN, WRITE=$PIN, DELETE=$PIN;
-                }
-
-                # data objects are stored in transparent EFs.
-                EF data {
-                    file-id     = 0400;
-                    structure   = transparent;
-                    acl         = *=NEVER, READ=NONE, UPDATE=$PIN, WRITE=$PIN, DELETE=$PIN;
-                }
-
-                # private data objects are stored in transparent EFs.
-                EF privdata {
-                    file-id     = 0500;
-                    structure   = transparent;
-                    acl         = *=NEVER, READ=$PIN, UPDATE=$PIN, WRITE=$PIN, DELETE=$PIN;
-                }
-            }
-        }
     }
 }
 
