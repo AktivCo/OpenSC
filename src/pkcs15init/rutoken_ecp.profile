@@ -133,8 +133,7 @@ filesystem {
         DF PKCS15-AppDF {
             type    = DF;
             file-id = 5000;
-            acl     = *=NONE, DELETE=CHV2;
-#           acl     = *=NEVER, SELECT=NONE, DELETE=CHV2, CREATE=CHV2, READ=NONE;
+            acl     = *=NONE;
 
             EF PKCS15-ODF {
                 file-id = 5031;
@@ -175,7 +174,7 @@ filesystem {
             EF PKCS15-DODF {
                 file-id = 6006;
                 size    = $dodf-size;
-                acl     = *=NEVER, READ=NONE, UPDATE=$PIN, WRITE=$PIN, DELETE=$PIN;
+                acl     = *=NONE;
             }
 
             # This template defines files for keys, certificates etc.
@@ -207,7 +206,7 @@ filesystem {
                 EF data {
                     file-id     = 0400;
                     structure   = transparent;
-                    acl         = *=NEVER, READ=NONE, UPDATE=$PIN, WRITE=$PIN, DELETE=$PIN;
+                    acl         = *=NONE;
                 }
 
                 # private data objects are stored in transparent EFs.
