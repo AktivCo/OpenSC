@@ -380,6 +380,8 @@ typedef unsigned long ck_key_type_t;
 #define CK_VENDOR_PKCS11_RU_TEAM_TK26   NSSCK_VENDOR_PKCS11_RU_TEAM
 
 #define CKK_GOSTR3410_512	(CK_VENDOR_PKCS11_RU_TEAM_TK26 | 0x003)
+#define CKK_KUZNECHIK		(CK_VENDOR_PKCS11_RU_TEAM_TK26 |0x004UL)
+#define CKK_MAGMA		(CK_VENDOR_PKCS11_RU_TEAM_TK26 |0x005UL)
 
 typedef unsigned long ck_certificate_type_t;
 
@@ -774,6 +776,8 @@ typedef unsigned long ck_mechanism_type_t;
 #define CKM_GOST28147           (0x1222UL)
 #define CKM_GOST28147_MAC       (0x1223UL)
 #define CKM_GOST28147_KEY_WRAP  (0x1224UL)
+#define CKM_MAGMA_KEY_GEN       (CK_VENDOR_PKCS11_RU_TEAM_TK26 |0x034UL)
+#define CKM_KUZNECHIK_KEY_GEN   (CK_VENDOR_PKCS11_RU_TEAM_TK26 |0x030UL)
 
 #define CKM_DSA_PARAMETER_GEN		(0x2000UL)
 #define CKM_DH_PKCS_PARAMETER_GEN	(0x2001UL)

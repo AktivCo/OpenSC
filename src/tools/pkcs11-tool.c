@@ -622,6 +622,7 @@ VARATTR_METHOD(PUBLIC_EXPONENT, CK_BYTE);		/* getPUBLIC_EXPONENT */
 VARATTR_METHOD(VALUE, unsigned char);			/* getVALUE */
 VARATTR_METHOD(GOSTR3410_PARAMS, unsigned char);	/* getGOSTR3410_PARAMS */
 VARATTR_METHOD(GOSTR3411_PARAMS, unsigned char);	/* getGOSTR3411_PARAMS */
+VARATTR_METHOD(GOST28147_PARAMS, unsigned char);	/* getGOST28147_PARAMS */
 VARATTR_METHOD(EC_POINT, unsigned char);		/* getEC_POINT */
 VARATTR_METHOD(EC_PARAMS, unsigned char);		/* getEC_PARAMS */
 VARATTR_METHOD(ALLOWED_MECHANISMS, CK_MECHANISM_TYPE);	/* getALLOWED_MECHANISMS */
@@ -2774,6 +2775,9 @@ static int
 gen_key(CK_SLOT_ID slot, CK_SESSION_HANDLE session, CK_OBJECT_HANDLE *hSecretKey,
 	const char *type, char *label)
 {
+	static const struct sc_aid GOST28147_PARAMSET_A_OID = { { 0x06, 0x07, 0x2A, 0x85, 0x03, 0x02, 0x02, 0x1F, 0x01 }, 9 };
+	static const struct sc_aid GOST28147_PARAMSET_Z_OID = { { 0x06, 0x09, 0x2A, 0x85, 0x03, 0x07, 0x01, 0x02, 0x05, 0x01, 0x01 }, 11 };
+	struct sc_aid key_paramset_encoded_oid;
 	CK_MECHANISM mechanism = {CKM_AES_KEY_GEN, NULL_PTR, 0};
 	CK_OBJECT_CLASS secret_key_class = CKO_SECRET_KEY;
 	CK_BBOOL _true = TRUE;
@@ -2868,6 +2872,57 @@ gen_key(CK_SLOT_ID slot, CK_SESSION_HANDLE session, CK_OBJECT_HANDLE *hSecretKey
 			FILL_ATTR(keyTemplate[n_attr], CKA_KEY_TYPE, &key_type, sizeof(key_type));
 			n_attr++;
 		}
+		else if (strncasecmp(type, "GOST28147:", strlen("GOST28147:")) == 0) {
+			CK_MECHANISM_TYPE mtypes[] = {CKM_GOST28147_KEY_GEN};
+			size_t mtypes_num = sizeof(mtypes)/sizeof(mtypes[0]);
+			const char set = type[strlen("GOST28147:")];
+
+			key_type = CKK_GOST28147;
+
+			if (!opt_mechanism_used)
+				if (!find_mechanism(slot, CKF_GENERATE, mtypes, mtypes_num, &opt_mechanism))
+					util_fatal("Generate Key mechanism not supported\n");
+
+			if (set == 'A')
+				key_paramset_encoded_oid = GOST28147_PARAMSET_A_OID;
+			else if (set == 'Z')
+				key_paramset_encoded_oid = GOST28147_PARAMSET_Z_OID;
+			else
+				util_fatal("Unknown key type %s, valid key type for mechanism GOST28147 is GOST28147:{A,Z}", type);
+			
+			FILL_ATTR(keyTemplate[n_attr], CKA_GOST28147_PARAMS, key_paramset_encoded_oid.value, key_paramset_encoded_oid.len);
+			n_attr++;
+			FILL_ATTR(keyTemplate[n_attr], CKA_KEY_TYPE, &key_type, sizeof(key_type));
+			n_attr++;
+		}
+		else if (strncasecmp(type, "MAGMA", strlen("MAGMA")) == 0)
+		{
+			CK_MECHANISM_TYPE mtypes[] = {CKM_MAGMA_KEY_GEN};
+			size_t mtypes_num = sizeof(mtypes)/sizeof(mtypes[0]);
+
+			key_type = CKK_MAGMA;
+
+			if (!opt_mechanism_used)
+				if (!find_mechanism(slot, CKF_GENERATE, mtypes, mtypes_num, &opt_mechanism))
+					util_fatal("Generate Key mechanism not supported\n");
+			
+			FILL_ATTR(keyTemplate[n_attr], CKA_KEY_TYPE, &key_type, sizeof(key_type));
+			n_attr++;
+		}
+		else if (strncasecmp(type, "KUZNECHIK", strlen("KUZNECHIK")) == 0)
+		{
+			CK_MECHANISM_TYPE mtypes[] = {CKM_KUZNECHIK_KEY_GEN};
+			size_t mtypes_num = sizeof(mtypes)/sizeof(mtypes[0]);
+
+			key_type = CKK_KUZNECHIK;
+
+			if (!opt_mechanism_used)
+				if (!find_mechanism(slot, CKF_GENERATE, mtypes, mtypes_num, &opt_mechanism))
+					util_fatal("Generate Key mechanism not supported\n");
+			
+			FILL_ATTR(keyTemplate[n_attr], CKA_KEY_TYPE, &key_type, sizeof(key_type));
+			n_attr++;
+		}
 		else {
 			util_fatal("Unknown key type %s", type);
 		}
@@ -2889,8 +2944,18 @@ gen_key(CK_SLOT_ID slot, CK_SESSION_HANDLE session, CK_OBJECT_HANDLE *hSecretKey
 		n_attr++;
 		FILL_ATTR(keyTemplate[n_attr], CKA_UNWRAP, &_true, sizeof(_true));
 		n_attr++;
-		FILL_ATTR(keyTemplate[n_attr], CKA_VALUE_LEN, &key_length, sizeof(key_length));
-		n_attr++;
+		
+		
+		if (key_type == CKK_GOST28147 || key_type == CKK_MAGMA || key_type == CKK_KUZNECHIK)
+		{
+			FILL_ATTR(keyTemplate[n_attr], CKA_PRIVATE, &_true, sizeof(_true));
+			n_attr++;
+		}
+		else
+		{
+			FILL_ATTR(keyTemplate[n_attr], CKA_VALUE_LEN, &key_length, sizeof(key_length));
+			n_attr++;
+		}
 
 		mechanism.mechanism = opt_mechanism;
 	}
@@ -4303,6 +4368,25 @@ show_key(CK_SESSION_HANDLE sess, CK_OBJECT_HANDLE obj)
 			printf("\n");
 			free(value);
 		}
+		break;
+	case CKK_GOST28147:
+		printf("; GOST28147\n");
+		unsigned char *oid = getGOST28147_PARAMS(sess, obj, &size);
+		if (oid) {
+			unsigned int	n;
+
+			printf("  PARAMS OID: ");
+			for (n = 0; n < size; n++)
+				printf("%02x", oid[n]);
+			printf("\n");
+			free(oid);
+		}
+		break;
+	case CKK_MAGMA:
+		printf("; MAGMA\n");
+		break;
+	case CKK_KUZNECHIK:
+		printf("; KUZNECHIK\n");
 		break;
 	default:
 		printf("; unknown key algorithm %lu\n",
@@ -7148,6 +7232,8 @@ static struct mech_info	p11_mechanisms[] = {
       { CKM_GOST28147,	"GOST28147", NULL },
       { CKM_GOST28147_MAC,	"GOST28147-MAC", NULL },
       { CKM_GOST28147_KEY_WRAP,	"GOST28147-KEY-WRAP", NULL },
+      { CKM_MAGMA_KEY_GEN, "MAGMA-KEY-GEN", NULL},
+      { CKM_KUZNECHIK_KEY_GEN, "KUZNECHIK-KEY-GEN", NULL},
       { CKM_GOSTR3410_KEY_PAIR_GEN,"GOSTR3410-KEY-PAIR-GEN", NULL },
       { CKM_GOSTR3410,		"GOSTR3410", NULL },
       { CKM_GOSTR3410_DERIVE,	"GOSTR3410-DERIVE", NULL },
