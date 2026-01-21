@@ -58,6 +58,9 @@
 #if !defined(OPENSSL_NO_EC) && !defined(OPENSSL_NO_ECDSA)
 #include <openssl/ec.h>
 #include <openssl/ecdsa.h>
+#if !defined(OPENSSL_NO_ENGINE)
+#include <openssl/engine.h>
+#endif
 #endif
 #include <openssl/bn.h>
 #include <openssl/err.h>
@@ -7469,8 +7472,81 @@ static int read_object(CK_SESSION_HANDLE session)
 				if (!i2d_PUBKEY_bio(pout, pkey))
 					util_fatal("cannot convert EC public key to DER");
 #endif
-					/* only if compiled with a version of OpenSSL or libressl */
-					/* do more tests for the other 3 as needed */
+#if !defined(OPENSSL_NO_EC) && !defined(OPENSSL_NO_ENGINE)
+			} else if (type == CKK_GOSTR3410 || type == CKK_GOSTR3410_512) {
+				if (!OPENSSL_init_crypto(OPENSSL_INIT_LOAD_CONFIG, NULL)) {
+					util_fatal("Failed to load openssl.cnf\n");
+				}
+				ENGINE *rtengine = ENGINE_by_id("rtengine");
+				if (!rtengine) {
+					util_fatal("Failed to get engine by id (rtengine).\n");
+				}
+				if (!ENGINE_init(rtengine)) {
+					ENGINE_free(rtengine);
+					util_fatal("Failed to initialize rtengine\n");
+				}
+				if (!ENGINE_set_default(rtengine, ENGINE_METHOD_ALL)) {
+					util_fatal("Failed to set rtengine as default\n");
+				}
+
+				CK_ULONG oidSize = 0;
+				char *oid_buf = getGOSTR3411_PARAMS(session, obj, &oidSize);
+				if (!oid_buf) {
+					util_fatal("Unknown GOSTR3411 params.\n");
+				}
+				free(oid_buf);
+				oid_buf = getGOSTR3410_PARAMS(session, obj, &oidSize);
+				if (!oid_buf) {
+					util_fatal("Unknown GOSTR3410 params.\n");
+				}
+				free(oid_buf);
+
+				char pkcs11_uri[1024] = {0};
+				strcpy(pkcs11_uri, "pkcs11:");
+				size_t uri_len = strlen(pkcs11_uri);
+				CK_ULONG idSize = 0;
+				unsigned char *id = getID(session, obj, &idSize);
+				if (id && idSize) {
+					strcat(pkcs11_uri, "id=");
+					uri_len += strlen("id=");
+					for (size_t i = 0; i < idSize; ++i) {
+						uri_len += sprintf(pkcs11_uri + uri_len, "%%%02X", id[i]);
+					}
+				}
+				CK_ULONG label_len = 0;
+				unsigned char *label = getLABEL(session, obj, &label_len);
+				if (label && label_len) {
+					const char *sep = (idSize > 0) ? ";object=" : "object=";
+					strcat(pkcs11_uri, sep);
+					uri_len = strlen(pkcs11_uri);
+
+					const unsigned char *pct_label = percent_encode(label, label_len);
+					if (pct_label) {
+						strcat(pkcs11_uri, (char *)pct_label);
+					}
+				}
+				pkey = ENGINE_load_public_key(rtengine, pkcs11_uri, NULL, NULL);
+				if (!pkey) {
+					free(id);
+					free(label);
+					util_fatal("cannot load public key into EVP_PKEY.\n");
+				}
+				if (!i2d_PUBKEY_bio(pout, pkey)) {
+					free(id);
+					free(label);
+					EVP_PKEY_free(pkey);
+					util_fatal("cannot convert GOST2012 public key to DER.\n");
+				}
+
+				free(id);
+				free(label);
+				EVP_PKEY_free(pkey);
+
+				ENGINE_finish(rtengine);
+				ENGINE_free(rtengine);
+#endif
+			/* only if compiled with a version of OpenSSL or libressl */
+			/* do more tests for the other 3 as needed */
 #if defined(EVP_PKEY_ED25519) || defined(EVP_PKEY_ED448) || defined (EVP_PKEY_X25519) || defined(EVP_PKEY_X448)
 			} else if (type == CKK_EC_EDWARDS || type == CKK_EC_MONTGOMERY) {
 				EVP_PKEY *key = NULL;
