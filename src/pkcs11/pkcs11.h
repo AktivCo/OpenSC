@@ -78,6 +78,10 @@ extern "C" {
 #define CKM_MAGMA_KEY_GEN			(CK_VENDOR_PKCS11_RU_TEAM_TK26 | 0x034UL)
 #define CKM_KUZNECHIK_KEY_GEN		(CK_VENDOR_PKCS11_RU_TEAM_TK26 | 0x030UL)
 
+#ifndef CKM_KDF_GOSTR3411_2012_256
+#define CKM_KDF_GOSTR3411_2012_256 (CK_VENDOR_PKCS11_RU_TEAM_TK26 | 0x026UL)
+#endif
+
 /* System dependencies.  */
 #if defined(_WIN32) || defined(CRYPTOKI_FORCE_WIN32)
 #pragma pack(pop, cryptoki)
